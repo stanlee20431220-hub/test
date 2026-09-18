@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}설정 - 오픈마켓 주문 수집기{% endblock %}
+
+{% block content %}
+  <h2>마켓별 연동 설정</h2>
+  <p class="hint">
+    네이버 Client ID / Client Secret은
+    <a href="https://apicenter.commerce.naver.com" target="_blank" rel="noopener">네이버 커머스API센터</a>
+    에서 애플리케이션을 등록하면 발급받을 수 있습니다. 아직 키가 없다면 "테스트 모드"를 켜둔 채로
+    화면과 기능을 먼저 확인해보세요.
+  </p>
+
+  {% for account in accounts %}
+    <form method="post" action="{{ url_for('settings') }}" class="settings-card">
+      <input type="hidden" name="market" value="{{ account.market }}">
+      <h3>{{ account.label }}</h3>
+
+      {% if account.market != 'naver' %}
+        <p class="hint">실제 API 연동은 준비 중입니다. 지금은 테스트 모드만 지원돼요.</p>
+      {% endif %}
+
+      <label>
+        Client ID
+        <input type="text" name="client_id" value="{{ account.client_id or '' }}"
+               {% if account.market != 'naver' %}disabled{% endif %}>
+      </label>
+      <label>
+        Client Secret
+        <input type="password" name="client_secret" value="{{ account.client_secret or '' }}"
+               {% if account.market != 'naver' %}disabled{% endif %}>
+      </label>
+      <label class="checkbox-label">
+        <input type="checkbox" name="use_mock" {% if account.use_mock %}checked{% endif %}>
+        테스트 모드 (가짜 주문으로 화면만 확인)
+      </label>
+
+      <button type="submit" class="btn">저장</button>
+    </form>
+  {% endfor %}
+{% endblock %}

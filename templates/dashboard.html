@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% block title %}대시보드 - 오픈마켓 주문 수집기{% endblock %}
+
+{% block content %}
+  <section class="collect-panel">
+    <h2>주문 수집하기</h2>
+    <div class="collect-buttons">
+      {% for account in accounts %}
+        <form method="post" action="{{ url_for('collect') }}" class="inline-form">
+          <input type="hidden" name="market" value="{{ account.market }}">
+          <button type="submit" class="btn">
+            {{ account.label }} 지금 수집
+            {% if account.use_mock %}<span class="badge badge-mock">테스트 모드</span>{% endif %}
+          </button>
+        </form>
+      {% endfor %}
+    </div>
+    <p class="hint">테스트 모드인 마켓은 실제 주문 대신 화면 확인용 가짜 주문이 생성됩니다. 설정 화면에서 끌 수 있어요.</p>
+  </section>
+
+  <section class="filter-panel">
+    <form method="get" class="filter-form">
+      <select name="market">
+        <option value="">전체 마켓</option>
+        {% for market, label in markets %}
+          <option value="{{ market }}" {% if market_filter == market %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+      <select name="status">
+        <option value="">전체 상태</option>
+        {% for status in statuses %}
+          <option value="{{ status }}" {% if status_filter == status %}selected{% endif %}>{{ status }}</option>
+        {% endfor %}
+      </select>
+      <input type="text" name="q" placeholder="상품명 / 구매자 / 주문번호 검색" value="{{ keyword }}">
+      <button type="submit" class="btn btn-secondary">검색</button>
+    </form>
+  </section>
+
+  <section>
+    <table class="order-table">
+      <thead>
+        <tr>
+          <th>마켓</th>
+          <th>주문번호</th>
+          <th>상품명</th>
+          <th>옵션</th>
+          <th>수량</th>
+          <th>금액</th>
+          <th>구매자</th>
+          <th>배송지</th>
+          <th>상태</th>
+          <th>주문일시</th>
+          <th>수집일시</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for order in orders %}
+          <tr>
+            <td>{{ order.market_label }}</td>
+            <td>{{ order.external_order_id }}</td>
+            <td>{{ order.product_name }}</td>
+            <td>{{ order.option_name }}</td>
+            <td>{{ order.quantity }}</td>
+            <td>{{ "{:,}".format(order.total_price or 0) }}원</td>
+            <td>{{ order.buyer_name }}</td>
+            <td>{{ order.address }}</td>
+            <td><span class="badge">{{ order.order_status }}</span></td>
+            <td>{{ order.ordered_at.strftime('%Y-%m-%d %H:%M') if order.ordered_at else '-' }}</td>
+            <td>{{ order.collected_at.strftime('%Y-%m-%d %H:%M') if order.collected_at else '-' }}</td>
+          </tr>
+        {% else %}
+          <tr>
+            <td colspan="11" class="empty-row">아직 수집된 주문이 없습니다. 위에서 "지금 수집"을 눌러보세요.</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </section>
+{% endblock %}
