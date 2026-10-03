@@ -1,3 +1,4 @@
+import json
 from datetime import datetime
 
 from extensions import db
@@ -58,3 +59,37 @@ class Order(db.Model):
     @property
     def market_label(self):
         return MARKET_LABELS.get(self.market, self.market)
+
+
+class DetailPage(db.Model):
+    """상세페이지 마법사로 만든 결과물."""
+
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(300), nullable=False)
+    theme = db.Column(db.String(20), default="mint", nullable=False)
+    product_json = db.Column(db.Text, nullable=False, default="{}")
+    content_json = db.Column(db.Text, nullable=False, default="{}")
+    images_json = db.Column(db.Text, nullable=False, default="[]")
+    generated_by = db.Column(db.String(20), default="template")
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    @property
+    def product(self):
+        return json.loads(self.product_json)
+
+    @property
+    def content(self):
+        return json.loads(self.content_json)
+
+    @content.setter
+    def content(self, value):
+        self.content_json = json.dumps(value, ensure_ascii=False)
+
+    @property
+    def images(self):
+        return json.loads(self.images_json)
+
+    @images.setter
+    def images(self, value):
+        self.images_json = json.dumps(value)

@@ -4,6 +4,7 @@ from dotenv import load_dotenv
 from flask import Flask, flash, redirect, render_template, request, url_for
 
 from collectors.mock import MockCollector
+from detail_page.routes import bp as wizard_bp
 from collectors.naver import NaverApiError, NaverCollector
 from extensions import db
 from models import MARKETS, MarketAccount, Order
@@ -23,6 +24,8 @@ def create_app():
         db.create_all()
         _ensure_market_accounts()
 
+    app.config["MAX_CONTENT_LENGTH"] = 40 * 1024 * 1024
+    app.register_blueprint(wizard_bp)
     register_routes(app)
     return app
 

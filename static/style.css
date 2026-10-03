@@ -128,3 +128,28 @@ body {
 }
 .checkbox-label { display: flex; align-items: center; gap: 8px; }
 .checkbox-label input { width: auto; }
+
+/* ---- 상세페이지 마법사 ---- */
+.wz-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+.wz-head h2 { margin: 0; }
+.wz-card { background: #fff; border-radius: 10px; padding: 18px 20px; margin-bottom: 14px; box-shadow: 0 1px 3px rgba(0,0,0,.06); }
+.wz-row { display: flex; justify-content: space-between; align-items: center; }
+.wz-sub { color: #777; font-size: 13px; margin-top: 4px; }
+.wz-actions { display: flex; gap: 14px; align-items: center; }
+.wz-actions form { margin: 0; }
+.wz-actions a, .wz-link { color: #2b4c8c; text-decoration: none; background: none; border: 0; cursor: pointer; font-size: 14px; padding: 0; }
+.wz-btn { background: #12b886; color: #fff !important; border: 0; border-radius: 6px; padding: 10px 18px; font-size: 15px; font-weight: 700; cursor: pointer; text-decoration: none; display: inline-block; }
+.wz-form label, .wz-form fieldset { display: block; margin-bottom: 14px; font-size: 14px; font-weight: 600; }
+.wz-form fieldset { border: 1px solid #e3e5ea; border-radius: 8px; padding: 12px; }
+.wz-form input:not([type=checkbox]):not([type=file]), .wz-form textarea, .wz-form select {
+  display: block; width: 100%; margin: 6px 0 8px; padding: 9px 10px; border: 1px solid #d5d8de; border-radius: 6px; font: inherit; font-weight: 400;
+}
+.wz-two { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.wz-split { display: grid; grid-template-columns: minmax(0, 1fr) 460px; gap: 20px; align-items: start; }
+.wz-preview { position: sticky; top: 16px; }
+.wz-preview iframe { width: 100%; height: 85vh; border: 1px solid #d5d8de; border-radius: 10px; background: #fff; }
+.wz-thumbs { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; }
+.wz-thumb { position: relative; width: 84px; margin: 0 !important; }
+.wz-thumb img { width: 84px; height: 84px; object-fit: cover; border-radius: 6px; }
+.wz-thumb input { position: absolute; top: 4px; left: 4px; }
+@media (max-width: 900px) { .wz-split { grid-template-columns: 1fr; } .wz-two { grid-template-columns: 1fr; } }

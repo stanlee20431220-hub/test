@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}새 상세페이지 · 상세페이지 마법사{% endblock %}
+{% block content %}
+<h2>새 상세페이지 만들기</h2>
+<form class="wz-card wz-form" method="post" enctype="multipart/form-data">
+  <label>상품명 *<input name="name" required placeholder="예) 스테인리스 텀블러 500ml"></label>
+  <div class="wz-two">
+    <label>카테고리<input name="category" placeholder="예) 주방용품"></label>
+    <label>판매가<input name="price" placeholder="예) 19,900원"></label>
+  </div>
+  <label>타깃 고객<input name="target" placeholder="예) 출퇴근길에 따뜻한 커피를 마시는 직장인"></label>
+  <label>핵심 특징 (한 줄에 하나씩)
+    <textarea name="features" rows="5" placeholder="12시간 보온·보냉&#10;304 스테인리스&#10;한 손에 쏙 들어오는 슬림 디자인"></textarea>
+  </label>
+  <label>상품 정보 (항목: 내용, 한 줄에 하나씩)
+    <textarea name="specs" rows="4" placeholder="용량: 500ml&#10;재질: 스테인리스 304&#10;원산지: 대한민국"></textarea>
+  </label>
+  <label>배송/교환/안내 문구
+    <textarea name="notice" rows="3" placeholder="입력하지 않으면 생략됩니다."></textarea>
+  </label>
+  <div class="wz-two">
+    <label>말투
+      <select name="tone">
+        {% for k, v in tones.items() %}<option value="{{ k }}">{{ v }}</option>{% endfor %}
+      </select>
+    </label>
+    <label>색상 테마
+      <select name="theme">
+        {% for k, t in themes.items() %}<option value="{{ k }}">{{ t.label }}</option>{% endfor %}
+      </select>
+    </label>
+  </div>
+  <label>상품 이미지 (최대 8장, 첫 장이 대표 이미지)
+    <input type="file" name="images" accept="image/*" multiple>
+  </label>
+  <button class="wz-btn" type="submit">자동으로 만들기</button>
+</form>
+{% endblock %}

@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{ p.name }}</title>
+<style>
+  :root { --accent: {{ theme.accent }}; --soft: {{ theme.bg }}; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #fff; color: #222; line-height: 1.7;
+         font-family: -apple-system, "Malgun Gothic", "Apple SD Gothic Neo", sans-serif; }
+  .page { max-width: 860px; margin: 0 auto; }
+  section { padding: 56px 32px; text-align: center; }
+  img { max-width: 100%; display: block; margin: 24px auto 0; border-radius: 8px; }
+  .hero { background: var(--soft); }
+  .hero .cat { color: var(--accent); font-weight: 700; letter-spacing: .05em; }
+  .hero h1 { font-size: 34px; line-height: 1.35; margin: 12px 0; word-break: keep-all; }
+  .hero p { font-size: 18px; color: #555; margin: 0; }
+  .hero .price { margin-top: 20px; font-size: 26px; font-weight: 800; color: var(--accent); }
+  h2 { font-size: 26px; margin: 0 0 24px; word-break: keep-all; }
+  .pains ul { list-style: none; padding: 0; margin: 0; }
+  .pains li { background: #f7f7f7; border-radius: 10px; padding: 16px 20px; margin: 10px auto; max-width: 560px; }
+  .feature { background: var(--soft); }
+  .feature:nth-of-type(even) { background: #fff; }
+  .feature .no { display: inline-block; background: var(--accent); color: #fff; border-radius: 999px;
+                 padding: 2px 14px; font-size: 14px; font-weight: 700; margin-bottom: 10px; }
+  .feature h2 { margin-bottom: 12px; }
+  .feature p { max-width: 560px; margin: 0 auto; color: #555; }
+  table { width: 100%; border-collapse: collapse; text-align: left; }
+  th, td { border-top: 1px solid #e5e5e5; padding: 12px 14px; }
+  th { width: 30%; background: #fafafa; }
+  tr:last-child th, tr:last-child td { border-bottom: 1px solid #e5e5e5; }
+  .faq { text-align: left; }
+  .faq h2 { text-align: center; }
+  .faq .q { font-weight: 700; margin-top: 18px; }
+  .faq .q::before { content: "Q. "; color: var(--accent); }
+  .faq .a { color: #555; margin: 4px 0 0; }
+  .notice { background: #f7f7f7; text-align: left; font-size: 14px; color: #666; white-space: pre-line; }
+  .cta { background: var(--accent); color: #fff; }
+  .cta h2 { margin: 0; }
+</style>
+</head>
+<body>
+<div class="page">
+  <section class="hero">
+    {% if p.category %}<div class="cat">{{ p.category }}</div>{% endif %}
+    <h1>{{ c.headline }}</h1>
+    <p>{{ c.subheadline }}</p>
+    {% if p.price %}<div class="price">{{ p.price }}</div>{% endif %}
+    {% if images %}<img src="{{ images[0] }}" alt="{{ p.name }}">{% endif %}
+  </section>
+
+  {% if c.pains %}
+  <section class="pains">
+    <h2>이런 고민, 있으셨죠?</h2>
+    <ul>{% for t in c.pains %}<li>{{ t }}</li>{% endfor %}</ul>
+  </section>
+  {% endif %}
+
+  {% for f in c.features %}
+  <section class="feature">
+    <span class="no">POINT {{ '%02d' % loop.index }}</span>
+    <h2>{{ f.title }}</h2>
+    <p>{{ f.desc }}</p>
+    {% if images[loop.index] %}<img src="{{ images[loop.index] }}" alt="{{ f.title }}">{% endif %}
+  </section>
+  {% endfor %}
+
+  {% if c.specs %}
+  <section>
+    <h2>상품 정보</h2>
+    <table>{% for s in c.specs %}<tr><th>{{ s.k }}</th><td>{{ s.v }}</td></tr>{% endfor %}</table>
+  </section>
+  {% endif %}
+
+  {% if c.faqs %}
+  <section class="faq">
+    <h2>자주 묻는 질문</h2>
+    {% for f in c.faqs %}<div class="q">{{ f.q }}</div><p class="a">{{ f.a }}</p>{% endfor %}
+  </section>
+  {% endif %}
+
+  {% if c.notice %}<section class="notice">{{ c.notice }}</section>{% endif %}
+
+  <section class="cta"><h2>{{ c.cta }}</h2></section>
+</div>
+</body>
+</html>

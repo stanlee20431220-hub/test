@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}{{ page.title }} · 상세페이지 마법사{% endblock %}
+{% block content %}
+<div class="wz-head">
+  <h2>{{ page.title }}</h2>
+  <div class="wz-actions">
+    <a href="{{ url_for('wizard.index') }}">목록</a>
+    <a class="wz-btn" href="{{ url_for('wizard.export', page_id=page.id) }}">HTML 다운로드</a>
+  </div>
+</div>
+<div class="wz-split">
+  <form class="wz-card wz-form" method="post" enctype="multipart/form-data">
+    <label>메인 카피<input name="headline" value="{{ c.headline }}"></label>
+    <label>보조 문구<input name="subheadline" value="{{ c.subheadline }}"></label>
+    <label>고객 고민 (한 줄에 하나)<textarea name="pains" rows="4">{{ c.pains|join('\n') }}</textarea></label>
+
+    <fieldset><legend>특징</legend>
+      {% for f in c.features %}
+        <input name="feature_title" value="{{ f.title }}" placeholder="제목">
+        <textarea name="feature_desc" rows="2" placeholder="설명">{{ f.desc }}</textarea>
+      {% endfor %}
+      <input name="feature_title" placeholder="+ 특징 추가: 제목">
+      <textarea name="feature_desc" rows="2" placeholder="설명"></textarea>
+    </fieldset>
+
+    <label>상품 정보 (항목: 내용)<textarea name="specs" rows="4">{{ specs_text }}</textarea></label>
+
+    <fieldset><legend>자주 묻는 질문</legend>
+      {% for f in c.faqs %}
+        <input name="faq_q" value="{{ f.q }}" placeholder="질문">
+        <textarea name="faq_a" rows="2" placeholder="답변">{{ f.a }}</textarea>
+      {% endfor %}
+      <input name="faq_q" placeholder="+ 질문 추가">
+      <textarea name="faq_a" rows="2" placeholder="답변"></textarea>
+    </fieldset>
+
+    <label>안내 문구<textarea name="notice" rows="3">{{ c.notice }}</textarea></label>
+    <label>마지막 구매 유도 문구<input name="cta" value="{{ c.cta }}"></label>
+    <label>색상 테마
+      <select name="theme">
+        {% for k, t in themes.items() %}<option value="{{ k }}" {{ 'selected' if k == page.theme }}>{{ t.label }}</option>{% endfor %}
+      </select>
+    </label>
+
+    <fieldset><legend>이미지 (체크 해제하면 삭제)</legend>
+      <div class="wz-thumbs">
+        {% for fname in page.images %}
+          <label class="wz-thumb"><img src="{{ image_url(fname) }}"><input type="checkbox" name="keep_image" value="{{ fname }}" checked></label>
+        {% endfor %}
+      </div>
+      <input type="file" name="images" accept="image/*" multiple>
+    </fieldset>
+
+    <button class="wz-btn" type="submit">저장하고 미리보기 갱신</button>
+  </form>
+
+  <div class="wz-preview">
+    <iframe src="{{ url_for('wizard.preview', page_id=page.id) }}" title="미리보기"></iframe>
+  </div>
+</div>
+{% endblock %}
