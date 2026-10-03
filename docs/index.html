@@ -25,10 +25,13 @@
 <header>상세페이지 마법사</header>
 <div class="wrap">
   <form class="card" id="f">
-    <label>상품명 *<input name="name" required placeholder="예) 스테인리스 텀블러 500ml"></label>
+    <label>상품 설명 텍스트 붙여넣기 (선택)
+      <textarea name="raw" rows="7" placeholder="상품명, 특징, 가격, 스펙 등을 그대로 붙여넣으세요.&#10;예)&#10;상품명: 스테인리스 텀블러 500ml&#10;- 12시간 보온·보냉&#10;- 304 스테인리스&#10;가격: 19,900원&#10;용량: 500ml"></textarea></label>
+    <p class="hint" style="margin:-6px 0 12px">붙여넣은 글에서 상품명·특징·가격·스펙을 자동으로 찾아 아래 칸을 채웁니다. 아래 칸에 직접 쓴 내용이 우선합니다.</p>
+    <label>상품명 (비우면 위 텍스트에서 자동 추출)<input name="name" placeholder="예) 스테인리스 텀블러 500ml"></label>
     <label>핵심 특징 (한 줄에 하나씩)
       <textarea name="features" rows="5" placeholder="12시간 보온·보냉&#10;304 스테인리스&#10;한 손에 쏙 들어오는 슬림 디자인"></textarea></label>
-    <label>상품 이미지 (첫 장이 대표 이미지)<input type="file" name="images" accept="image/*" multiple></label>
+    <label>상품 이미지 (여러 장 선택 가능, 첫 장이 대표 이미지)<input type="file" name="images" accept="image/*" multiple></label>
     <details><summary>더 자세히 입력하기 (선택)</summary>
       <label>카테고리<input name="category" placeholder="예) 주방용품"></label>
       <label>판매가<input name="price" placeholder="예) 19,900원"></label>
@@ -39,9 +42,12 @@
       <label>색상<select name="theme"><option value="mint">민트</option><option value="navy">네이비</option><option value="coral">코랄</option><option value="mono">모노</option></select></label>
     </details>
     <button type="submit">자동으로 만들기</button>
+    <p class="hint" id="fmsg" style="color:#c92a2a;font-weight:600"></p>
     <div id="exports" style="display:none">
-      <button type="button" class="sub" id="dlpng">상세페이지 이미지(PNG) 저장</button>
-      <button type="button" class="sub" id="dlthumb">썸네일(PNG, 1000×1000) 저장</button>
+      <label style="margin-top:12px">이미지 한 장의 최대 높이
+        <select id="sliceH"><option value="1000">1000px (짧게)</option><option value="1500" selected>1500px</option><option value="2000">2000px</option></select></label>
+      <button type="button" class="sub" id="mkimg">이미지 만들기 (썸네일 + 상세 여러 장)</button>
+      <button type="button" class="sub" id="dlzip" style="display:none">전체 ZIP으로 저장</button>
       <button type="button" class="sub" id="dltxt">AI검색용 텍스트(.txt) 저장</button>
       <button type="button" class="sub" id="cptxt">AI검색용 텍스트 복사</button>
       <button type="button" class="sub" id="dl" style="background:#555">HTML 파일로 저장</button>
@@ -51,11 +57,13 @@
   </form>
   <div>
     <div class="card" id="empty">왼쪽에 상품 정보를 입력하고<br>"자동으로 만들기"를 눌러보세요.</div>
-    <div id="out"></div>
+    <div class="card" id="gallery" style="display:none"><strong>만들어진 이미지</strong> <span class="hint" id="gcount"></span><div id="gthumbs" style="display:flex;flex-wrap:wrap;gap:10px;margin-top:10px"></div></div>
+    <div id="out" style="margin-top:20px"></div>
   </div>
 </div>
 
 <script src="html2canvas.min.js"></script>
+<script src="jszip.min.js"></script>
 <script>
 const THEMES = { mint: ["#12b886", "#f1fbf7"], navy: ["#2b4c8c", "#f0f4fb"], coral: ["#f0614f", "#fff3f1"], mono: ["#222222", "#f4f4f4"] };
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
@@ -92,6 +100,7 @@ function build(p, c, imgs) {
 <section class="hero">${p.category ? `<div class="cat">${esc(p.category)}</div>` : ""}<h1>${esc(c.headline)}</h1><p>${esc(c.sub)}</p>${p.price ? `<div class="price">${esc(p.price)}</div>` : ""}${imgs[0] ? `<img src="${imgs[0]}" alt="${esc(p.name)}">` : ""}</section>
 <section class="pains"><h2>이런 고민, 있으셨죠?</h2><ul>${c.pains.map(t => `<li>${esc(t)}</li>`).join("")}</ul></section>
 ${c.features.map((f, i) => `<section class="feature"><span class="no">POINT ${String(i + 1).padStart(2, "0")}</span><h2>${esc(f.t)}</h2><p>${esc(f.d)}</p>${imgs[i + 1] ? `<img src="${imgs[i + 1]}" alt="${esc(p.name + " - " + f.t)}">` : ""}</section>`).join("")}
+${imgs.length > c.features.length + 1 ? `<section><h2>상세 컷</h2>${imgs.slice(c.features.length + 1).map(u => `<img src="${u}" alt="${esc(p.name)}">`).join("")}</section>` : ""}
 ${specs.length ? `<section><h2>상품 정보</h2><table>${specs.map(([k, ...v]) => `<tr><th>${esc(k)}</th><td>${esc(v.join(": "))}</td></tr>`).join("")}</table></section>` : ""}
 <section class="faq"><h2>자주 묻는 질문</h2>${c.faqs.map(([q, a]) => `<div class="q">${esc(q)}</div><p class="a">${esc(a)}</p>`).join("")}</section>
 ${p.notice ? `<section class="notice">${esc(p.notice)}</section>` : ""}
@@ -99,15 +108,61 @@ ${p.notice ? `<section class="notice">${esc(p.notice)}</section>` : ""}
 }
 
 const scope = (css, sel) => css.replace(/(^|\})([^{}@]+)\{/g, (m, a, r) => a + r.split(",").map(x => sel + " " + x.trim()).join(",") + "{");
+
+// 붙여넣은 글에서 상품명/특징/가격/스펙 등을 규칙으로 추출
+function extract(text) {
+  const L = (text || "").split(/\r?\n/).map(x => x.trim()).filter(Boolean);
+  const o = { name: "", category: "", price: "", target: "", features: [], specs: [], notice: [] };
+  const kv = /^\[?([^:：\]\[]{1,12})\]?\s*[:：]\s*(.+)$/;
+  const hd = { feat: /^[\[\(【]?\s*(특징|장점|핵심\s*특징|포인트|상품\s*특징)\s*[\]\)】]?\s*:?$/, spec: /^[\[\(【]?\s*(상품\s*정보|제품\s*정보|스펙|사양|규격)\s*[\]\)】]?\s*:?$/, notice: /^[\[\(【]?\s*(안내|배송|교환|반품|유의\s*사항|주의\s*사항)[^:：]{0,6}[\]\)】]?\s*:?$/ };
+  const strip = x => x.replace(/^[\s\-•·*▪✔✓☑✅▶►■□◆●○]+/, "").trim();
+  const isBullet = x => /^[\-•·*▪✔✓☑✅▶►■□◆●○]\s*/.test(x);
+  const loose = [];
+  let mode = "";
+  for (const l of L) {
+    if (hd.feat.test(l)) { mode = "feat"; continue; }
+    if (hd.spec.test(l)) { mode = "spec"; continue; }
+    if (hd.notice.test(l)) { mode = "notice"; continue; }
+    const m = strip(l).match(kv);
+    if (m) {
+      const k = m[1].replace(/\s/g, ""), v = m[2].trim();
+      if (/^(상품명|제품명|품명|이름)$/.test(k)) { o.name = v; continue; }
+      if (/^(카테고리|분류|종류)$/.test(k)) { o.category = v; continue; }
+      if (/^(가격|판매가|정가|소비자가|할인가)$/.test(k)) { o.price = v; continue; }
+      if (/^(타깃|타겟|대상|추천대상|추천)$/.test(k)) { o.target = v; continue; }
+      if (/^(특징|장점|핵심특징|포인트)$/.test(k)) { v.split(/[,，|·]/).map(strip).filter(Boolean).forEach(x => o.features.push(x)); continue; }
+      if (/^(배송|교환|반품|안내|유의사항|주의사항|A\/S|AS)/.test(k)) { o.notice.push(strip(l)); continue; }
+      o.specs.push({ k: m[1].trim(), v }); continue;
+    }
+    if (mode === "feat") { o.features.push(strip(l)); continue; }
+    if (mode === "notice") { o.notice.push(strip(l)); continue; }
+    if (mode === "spec") { const t = strip(l).match(/^(\S{1,10})\s+(.+)$/); if (t) o.specs.push({ k: t[1], v: t[2] }); continue; }
+    loose.push(l);
+  }
+  if (!o.name) { const i = loose.findIndex(x => !isBullet(x) && x.length <= 60); if (i >= 0) o.name = loose.splice(i, 1)[0]; }
+  if (!o.features.length) {
+    loose.filter(isBullet).forEach(x => o.features.push(strip(x)));
+    if (!o.features.length) loose.forEach(x => x.split(/(?<=[.!?。])\s+|(?<=[다요음함])\.\s*/).map(strip).filter(y => y.length >= 4 && y.length <= 60).forEach(y => o.features.push(y)));
+  }
+  if (!o.price) { const m = (text || "").match(/(\d{1,3}(?:,\d{3})+|\d{4,})\s*원/); if (m) o.price = m[0]; }
+  o.features = [...new Set(o.features)].slice(0, 8);
+  return o;
+}
 const readFile = f => new Promise(r => { const fr = new FileReader(); fr.onload = () => r(fr.result); fr.readAsDataURL(f); });
-let title = "", accent = "", soft = "", thumbSrc = "", pName = "";
+let built = null, title = "", accent = "", soft = "", thumbSrc = "", pName = "";
 
 document.getElementById("f").addEventListener("submit", async e => {
   e.preventDefault();
+  const fm = e.target, ex = extract(fm.raw.value); $("fmsg").textContent = "";
+  const fill = (n, v) => { if (!fm[n].value.trim() && v) fm[n].value = v; };
+  fill("name", ex.name); fill("features", ex.features.join("\n")); fill("category", ex.category); fill("price", ex.price);
+  fill("target", ex.target); fill("specs", ex.specs.map(x => `${x.k}: ${x.v}`).join("\n")); fill("notice", ex.notice.join("\n"));
+  if (!fm.name.value.trim()) { fm.name.focus(); return ($("fmsg").textContent = "상품명을 찾지 못했어요. 상품명 칸에 입력하거나, 첫 줄에 상품명이 오도록(또는 '상품명: ○○' 형식으로) 붙여넣어 주세요."); }
+  if (ex.specs.length || ex.notice.length || ex.category || ex.target) fm.querySelector("details").open = true;
   const d = new FormData(e.target);
   const p = { name: d.get("name").trim(), category: d.get("category").trim(), price: d.get("price").trim(), target: d.get("target").trim(),
     tone: d.get("tone"), features: lines(d.get("features")), specs: d.get("specs"), notice: d.get("notice").trim() };
-  const files = [...e.target.images.files].slice(0, 8);
+  const files = [...e.target.images.files].slice(0, 12);
   const imgs = await Promise.all(files.map(readFile));
   [accent, soft] = THEMES[d.get("theme")]; title = p.name;
   const out = document.getElementById("out");
@@ -115,6 +170,7 @@ document.getElementById("f").addEventListener("submit", async e => {
   out.style.display = "block";
   document.getElementById("empty").style.display = "none";
   document.getElementById("exports").style.display = "block"; thumbSrc = imgs[0] || ""; pName = p.name;
+  $("gallery").style.display = "none"; $("dlzip").style.display = "none"; built = null; say("");
   out.scrollIntoView({ behavior: "smooth" });
 });
 
@@ -139,35 +195,67 @@ function pageText() {
 $("dltxt").onclick = () => { save(new Blob([pageText()], { type: "text/plain;charset=utf-8" }), "detail-text.txt"); say("텍스트 파일을 저장했어요. 상품 설명란/대체텍스트에 붙여넣으세요."); };
 $("cptxt").onclick = async () => { try { await navigator.clipboard.writeText(pageText()); say("복사했어요."); } catch { say("복사가 막혔어요. 저장 버튼을 이용해주세요."); } };
 
-// 상세페이지 -> 가로 860px 이미지 (오픈마켓 권장 폭)
-$("dlpng").onclick = async () => {
-  if (!window.html2canvas) return say("이미지 변환 도구를 불러오지 못했어요. 인터넷 연결을 확인해주세요.");
-  say("이미지 만드는 중...");
+// 상세페이지 -> 가로 860px, 섹션 경계에서 잘라 여러 장의 짧은 PNG로
+const toBlob = c => new Promise(r => c.toBlob(r, "image/png"));
+async function makeSlices(maxH) {
   const box = document.createElement("div");
   box.style.cssText = "position:fixed;left:-10000px;top:0;width:860px;background:#fff";
   box.innerHTML = `<style>${scope(CSS(accent, soft), "#x-root")}</style><div id="x-root">${$("page-root").innerHTML}</div>`;
   document.body.appendChild(box);
   try {
-    await new Promise(r => setTimeout(r, 100));
-    const c = await html2canvas(box.querySelector("#x-root"), { width: 860, windowWidth: 860, scale: 1, backgroundColor: "#fff", useCORS: true });
-    c.toBlob(b => { save(b, "detail-page.png"); say(`저장했어요. (860×${c.height}px)`); });
-  } catch (e) { say("이미지 변환에 실패했어요: " + e.message); } finally { box.remove(); }
+    await new Promise(r => setTimeout(r, 150));
+    const root = box.querySelector("#x-root"), top0 = root.getBoundingClientRect().top;
+    const secs = [...root.querySelectorAll(".page > section")].map(e => { const r = e.getBoundingClientRect(); return [Math.round(r.top - top0), Math.round(r.bottom - top0)]; });
+    const full = await html2canvas(root, { width: 860, windowWidth: 860, scale: 1, backgroundColor: "#fff", useCORS: true });
+    // 섹션을 묶어 maxH 이하가 되게 그룹화 (한 섹션이 더 크면 단독)
+    const cuts = []; let start = secs[0][0], end = secs[0][1];
+    for (const [t, bt] of secs.slice(1)) { if (bt - start > maxH) { cuts.push([start, end]); start = t; } end = bt; }
+    cuts.push([start, Math.min(end, full.height)]);
+    // 마지막 조각이 너무 작으면(예: 구매 문구만) 앞 조각에 합침
+    if (cuts.length > 1) { const [l0, l1] = cuts[cuts.length - 1], [p0] = cuts[cuts.length - 2]; if (l1 - l0 < 250 && l1 - p0 <= maxH * 1.2) { cuts.pop(); cuts[cuts.length - 1][1] = l1; } }
+    return cuts.map(([y0, y1]) => { const c = document.createElement("canvas"); c.width = 860; c.height = y1 - y0; c.getContext("2d").drawImage(full, 0, y0, 860, y1 - y0, 0, 0, 860, y1 - y0); return c; });
+  } finally { box.remove(); }
+}
+
+$("mkimg").onclick = async () => {
+  if (!window.html2canvas) return say("이미지 변환 도구를 불러오지 못했어요.");
+  say("이미지 만드는 중...");
+  try {
+    const slices = await makeSlices(+$("sliceH").value);
+    const blobs = await Promise.all(slices.map(toBlob));
+    const thumb = await makeThumb();
+    built = { slices: blobs, thumb };
+    const g = $("gthumbs"); g.innerHTML = "";
+    const add = (b, label, name) => { const u = URL.createObjectURL(b); const f = document.createElement("figure"); f.style.cssText = "margin:0;width:150px;text-align:center;font-size:12px";
+      f.innerHTML = `<a href="${u}" download="${name}"><img src="${u}" style="width:150px;height:150px;object-fit:cover;object-position:top;border:1px solid #ddd;border-radius:6px;margin:0;display:block"></a>${label}`; g.appendChild(f); };
+    add(thumb, "썸네일 1000×1000", "thumbnail.png");
+    blobs.forEach((b, i) => add(b, `상세 ${i + 1}/${blobs.length} · 860×${slices[i].height}`, `detail-${String(i + 1).padStart(2, "0")}.png`));
+    $("gcount").textContent = `— 썸네일 1장 + 상세 ${blobs.length}장 (이미지를 누르면 개별 저장)`;
+    $("gallery").style.display = "block"; $("dlzip").style.display = "block";
+    say(`만들었어요. 상세페이지 ${blobs.length}장 + 썸네일 1장`);
+    $("gallery").scrollIntoView({ behavior: "smooth" });
+  } catch (e) { say("이미지 변환에 실패했어요: " + e.message); }
+};
+$("dlzip").onclick = async () => {
+  if (!built) return;
+  const z = new JSZip();
+  z.file("thumbnail.png", built.thumb);
+  built.slices.forEach((b, i) => z.file(`detail-${String(i + 1).padStart(2, "0")}.png`, b));
+  z.file("detail-text.txt", pageText());
+  save(await z.generateAsync({ type: "blob" }), "detail-page.zip");
+  say("ZIP 저장 완료 (썸네일 + 상세 이미지 + 검색용 텍스트)");
 };
 
 // 썸네일: 대표 이미지를 정사각형으로 잘라 1000x1000 (글자 없음 - 오픈마켓 규정상 안전)
-$("dlthumb").onclick = () => {
-  const c = document.createElement("canvas"); c.width = c.height = 1000; const g = c.getContext("2d");
-  const done = () => c.toBlob(b => { save(b, "thumbnail.png"); say("썸네일 1000×1000 저장했어요."); });
-  g.fillStyle = soft; g.fillRect(0, 0, 1000, 1000);
-  if (!thumbSrc) {
-    g.fillStyle = accent; g.font = "700 64px sans-serif"; g.textAlign = "center"; g.textBaseline = "middle";
-    g.fillText(pName.slice(0, 14), 500, 500); say("이미지를 올리지 않아 상품명 썸네일로 만들었어요."); return done();
-  }
-  const im = new Image(); im.onload = () => {
-    const m = Math.min(im.width, im.height), sx = (im.width - m) / 2, sy = (im.height - m) / 2;
-    g.drawImage(im, sx, sy, m, m, 0, 0, 1000, 1000); done();
-  }; im.src = thumbSrc;
-};
+function makeThumb() {
+  return new Promise(res => {
+    const c = document.createElement("canvas"); c.width = c.height = 1000; const g = c.getContext("2d");
+    const done = () => c.toBlob(res, "image/png");
+    g.fillStyle = soft; g.fillRect(0, 0, 1000, 1000);
+    if (!thumbSrc) { g.fillStyle = accent; g.font = "700 64px sans-serif"; g.textAlign = "center"; g.textBaseline = "middle"; g.fillText(pName.slice(0, 14), 500, 500); return done(); }
+    const im = new Image(); im.onload = () => { const m = Math.min(im.width, im.height); g.drawImage(im, (im.width - m) / 2, (im.height - m) / 2, m, m, 0, 0, 1000, 1000); done(); }; im.src = thumbSrc;
+  });
+}
 
 document.getElementById("dl").addEventListener("click", () => {
   const body = document.getElementById("page-root").innerHTML;
