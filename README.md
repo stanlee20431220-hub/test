@@ -141,3 +141,7 @@ static/style.css         # 디자인
 
 - `.env`에 `ANTHROPIC_API_KEY`를 넣으면 Claude가 문구를 작성합니다. 비워두면 기본 템플릿 문구로 만들어집니다(오프라인 동작).
 - 테스트: `python3 -m unittest tests.test_wizard`
+
+## 파이썬 없이 쓰기 (GitHub Pages)
+
+`docs/index.html` 한 파일로 동작하는 브라우저 전용 버전입니다. 저장소 Settings → Pages → Branch 선택, 폴더 `/docs` 로 켜면 링크가 생깁니다.

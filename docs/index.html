@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>상세페이지 마법사</title>
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #f5f6f8; color: #1f2430; font-family: -apple-system, "Malgun Gothic", "Apple SD Gothic Neo", sans-serif; }
+  header { background: #1f2430; color: #fff; padding: 14px 20px; font-weight: 700; font-size: 18px; }
+  .wrap { max-width: 1200px; margin: 20px auto; padding: 0 16px; display: grid; grid-template-columns: 380px minmax(0,1fr); gap: 20px; align-items: start; }
+  .card { background: #fff; border-radius: 10px; padding: 18px; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
+  label { display: block; font-size: 14px; font-weight: 600; margin-bottom: 12px; }
+  input:not([type=file]), textarea, select { display: block; width: 100%; margin-top: 6px; padding: 9px 10px; border: 1px solid #d5d8de; border-radius: 6px; font: inherit; font-weight: 400; }
+  details { margin-bottom: 12px; } summary { cursor: pointer; color: #2b4c8c; font-weight: 600; margin-bottom: 10px; }
+  button { background: #12b886; color: #fff; border: 0; border-radius: 6px; padding: 11px 18px; font-size: 15px; font-weight: 700; cursor: pointer; width: 100%; }
+  button.sub { background: #2b4c8c; margin-top: 8px; }
+  .hint { font-size: 13px; color: #777; margin: 8px 0 0; }
+  #empty { text-align: center; color: #777; padding: 80px 20px; }
+  #out { display: none; }
+  @media (max-width: 900px) { .wrap { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<header>상세페이지 마법사</header>
+<div class="wrap">
+  <form class="card" id="f">
+    <label>상품명 *<input name="name" required placeholder="예) 스테인리스 텀블러 500ml"></label>
+    <label>핵심 특징 (한 줄에 하나씩)
+      <textarea name="features" rows="5" placeholder="12시간 보온·보냉&#10;304 스테인리스&#10;한 손에 쏙 들어오는 슬림 디자인"></textarea></label>
+    <label>상품 이미지 (첫 장이 대표 이미지)<input type="file" name="images" accept="image/*" multiple></label>
+    <details><summary>더 자세히 입력하기 (선택)</summary>
+      <label>카테고리<input name="category" placeholder="예) 주방용품"></label>
+      <label>판매가<input name="price" placeholder="예) 19,900원"></label>
+      <label>타깃 고객<input name="target" placeholder="예) 출퇴근길 직장인"></label>
+      <label>상품 정보 (항목: 내용)<textarea name="specs" rows="3" placeholder="용량: 500ml&#10;재질: 스테인리스 304"></textarea></label>
+      <label>배송/교환 안내<textarea name="notice" rows="3"></textarea></label>
+      <label>말투<select name="tone"><option value="friendly">친근하게</option><option value="premium">고급스럽게</option><option value="trust">신뢰감 있게</option></select></label>
+      <label>색상<select name="theme"><option value="mint">민트</option><option value="navy">네이비</option><option value="coral">코랄</option><option value="mono">모노</option></select></label>
+    </details>
+    <button type="submit">자동으로 만들기</button>
+    <button type="button" class="sub" id="dl" style="display:none">HTML 파일로 저장</button>
+    <p class="hint">만든 뒤 오른쪽 화면의 글자를 직접 클릭해서 고칠 수 있어요. 데이터는 내 브라우저 밖으로 나가지 않습니다.</p>
+  </form>
+  <div>
+    <div class="card" id="empty">왼쪽에 상품 정보를 입력하고<br>"자동으로 만들기"를 눌러보세요.</div>
+    <div id="out"></div>
+  </div>
+</div>
+
+<script>
+const THEMES = { mint: ["#12b886", "#f1fbf7"], navy: ["#2b4c8c", "#f0f4fb"], coral: ["#f0614f", "#fff3f1"], mono: ["#222222", "#f4f4f4"] };
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const lines = t => (t || "").split("\n").map(s => s.replace(/^[\s\-•]+/, "").trim()).filter(Boolean);
+
+function makeCopy(p) {
+  const n = p.name, target = p.target || "꼼꼼하게 고르는 분";
+  const feats = p.features.length ? p.features : ["꼼꼼한 품질 관리", "합리적인 가격", "빠른 배송"];
+  return {
+    headline: { friendly: `${n}, 한 번 써보면 알아요!`, premium: `${n}, 차이는 디테일에서 시작됩니다`, trust: `${n} — 꼭 필요한 기능만 담았습니다` }[p.tone],
+    sub: `${target}을 위해 준비했습니다.`,
+    pains: [`${p.category || "상품"}, 어떤 걸 골라야 할지 고민되셨나요?`, "후기는 많은데 정작 믿을 만한 정보가 없어 답답하셨나요?", "가격 대비 만족스러운 제품을 찾고 계셨나요?"],
+    features: feats.map(f => ({ t: f, d: `${n}의 핵심 포인트, '${f}'. 사용하는 순간 차이를 느껴보세요.` })),
+    faqs: [["배송은 얼마나 걸리나요?", "결제 완료 후 영업일 기준 1~3일 내 출고됩니다."], ["교환/반품이 가능한가요?", "수령 후 7일 이내 미사용 상품에 한해 가능합니다."], [`${n}은 누구에게 추천하나요?`, `${target}에게 추천드립니다.`]],
+    cta: { friendly: "지금 바로 만나보세요!", premium: "특별한 선택을 시작하세요", trust: "상세 정보를 확인하고 구매하세요" }[p.tone],
+  };
+}
+
+const CSS = (a, s) => `*{box-sizing:border-box}body{margin:0;background:#fff;color:#222;line-height:1.7;font-family:-apple-system,"Malgun Gothic","Apple SD Gothic Neo",sans-serif}
+.page{max-width:860px;margin:0 auto}section{padding:56px 32px;text-align:center}img{max-width:100%;display:block;margin:24px auto 0;border-radius:8px}
+.hero{background:${s}}.cat{color:${a};font-weight:700}.hero h1{font-size:34px;line-height:1.35;margin:12px 0;word-break:keep-all}.hero p{font-size:18px;color:#555;margin:0}
+.price{margin-top:20px;font-size:26px;font-weight:800;color:${a}}h2{font-size:26px;margin:0 0 24px;word-break:keep-all}
+.pains ul{list-style:none;padding:0;margin:0}.pains li{background:#f7f7f7;border-radius:10px;padding:16px 20px;margin:10px auto;max-width:560px}
+.feature{background:${s}}.feature:nth-of-type(even){background:#fff}.no{display:inline-block;background:${a};color:#fff;border-radius:999px;padding:2px 14px;font-size:14px;font-weight:700;margin-bottom:10px}
+.feature h2{margin-bottom:12px}.feature p{max-width:560px;margin:0 auto;color:#555}table{width:100%;border-collapse:collapse;text-align:left}
+th,td{border-top:1px solid #e5e5e5;padding:12px 14px}th{width:30%;background:#fafafa}tr:last-child th,tr:last-child td{border-bottom:1px solid #e5e5e5}
+.faq{text-align:left}.faq h2{text-align:center}.q{font-weight:700;margin-top:18px}.q::before{content:"Q. ";color:${a}}.a{color:#555;margin:4px 0 0}
+.notice{background:#f7f7f7;text-align:left;font-size:14px;color:#666;white-space:pre-line}.cta{background:${a};color:#fff}.cta h2{margin:0}`;
+
+function build(p, c, imgs) {
+  const specs = lines(p.specs).map(l => l.split(/\s*[:：]\s*/)).filter(x => x.length >= 2);
+  return `<div class="page">
+<section class="hero">${p.category ? `<div class="cat">${esc(p.category)}</div>` : ""}<h1>${esc(c.headline)}</h1><p>${esc(c.sub)}</p>${p.price ? `<div class="price">${esc(p.price)}</div>` : ""}${imgs[0] ? `<img src="${imgs[0]}">` : ""}</section>
+<section class="pains"><h2>이런 고민, 있으셨죠?</h2><ul>${c.pains.map(t => `<li>${esc(t)}</li>`).join("")}</ul></section>
+${c.features.map((f, i) => `<section class="feature"><span class="no">POINT ${String(i + 1).padStart(2, "0")}</span><h2>${esc(f.t)}</h2><p>${esc(f.d)}</p>${imgs[i + 1] ? `<img src="${imgs[i + 1]}">` : ""}</section>`).join("")}
+${specs.length ? `<section><h2>상품 정보</h2><table>${specs.map(([k, ...v]) => `<tr><th>${esc(k)}</th><td>${esc(v.join(": "))}</td></tr>`).join("")}</table></section>` : ""}
+<section class="faq"><h2>자주 묻는 질문</h2>${c.faqs.map(([q, a]) => `<div class="q">${esc(q)}</div><p class="a">${esc(a)}</p>`).join("")}</section>
+${p.notice ? `<section class="notice">${esc(p.notice)}</section>` : ""}
+<section class="cta"><h2>${esc(c.cta)}</h2></section></div>`;
+}
+
+const readFile = f => new Promise(r => { const fr = new FileReader(); fr.onload = () => r(fr.result); fr.readAsDataURL(f); });
+let title = "", accent = "", soft = "";
+
+document.getElementById("f").addEventListener("submit", async e => {
+  e.preventDefault();
+  const d = new FormData(e.target);
+  const p = { name: d.get("name").trim(), category: d.get("category").trim(), price: d.get("price").trim(), target: d.get("target").trim(),
+    tone: d.get("tone"), features: lines(d.get("features")), specs: d.get("specs"), notice: d.get("notice").trim() };
+  const files = [...e.target.images.files].slice(0, 8);
+  const imgs = await Promise.all(files.map(readFile));
+  [accent, soft] = THEMES[d.get("theme")]; title = p.name;
+  const out = document.getElementById("out");
+  out.innerHTML = `<style>#out ${""}</style>` + `<div class="card" style="padding:0;overflow:hidden"><style>${CSS(accent, soft).replace(/(^|\})([^{}@]+)\{/g, (m, a, s) => a + s.split(",").map(x => "#page-root " + x.trim()).join(",") + "{")}</style><div id="page-root" contenteditable="true">${build(p, makeCopy(p), imgs)}</div></div>`;
+  out.style.display = "block";
+  document.getElementById("empty").style.display = "none";
+  document.getElementById("dl").style.display = "block";
+  out.scrollIntoView({ behavior: "smooth" });
+});
+
+document.getElementById("dl").addEventListener("click", () => {
+  const body = document.getElementById("page-root").innerHTML;
+  const html = `<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(title)}</title><style>${CSS(accent, soft)}</style></head><body>${body}</body></html>`;
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([html], { type: "text/html" }));
+  a.download = "detail-page.html"; a.click();
+});
+</script>
+</body>
+</html>
