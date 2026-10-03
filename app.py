@@ -27,6 +27,11 @@ def create_app():
     app.config["MAX_CONTENT_LENGTH"] = 40 * 1024 * 1024
     app.register_blueprint(wizard_bp)
     register_routes(app)
+
+    @app.route("/")
+    def home():
+        return redirect(url_for("wizard.new"))
+
     return app
 
 
@@ -39,7 +44,7 @@ def _ensure_market_accounts():
 
 
 def register_routes(app):
-    @app.route("/")
+    @app.route("/orders")
     def dashboard():
         market_filter = request.args.get("market", "")
         status_filter = request.args.get("status", "")

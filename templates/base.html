@@ -3,17 +3,16 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{% block title %}오픈마켓 주문 수집기{% endblock %}</title>
+  <title>{% block title %}상세페이지 마법사{% endblock %}</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
   <header class="topbar">
     <div class="topbar-inner">
-      <a class="brand" href="{{ url_for('dashboard') }}">오픈마켓 주문 수집기</a>
+      <a class="brand" href="{{ url_for('wizard.new') }}">상세페이지 마법사</a>
       <nav>
-        <a href="{{ url_for('dashboard') }}">대시보드</a>
-        <a href="{{ url_for('wizard.index') }}">상세페이지 마법사</a>
-        <a href="{{ url_for('settings') }}">설정</a>
+        <a href="{{ url_for('wizard.new') }}">새로 만들기</a>
+        <a href="{{ url_for('wizard.index') }}">내 상세페이지</a>
       </nav>
     </div>
   </header>
