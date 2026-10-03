@@ -145,3 +145,5 @@ static/style.css         # 디자인
 ## 파이썬 없이 쓰기 (GitHub Pages)
 
 `docs/index.html` 한 파일로 동작하는 브라우저 전용 버전입니다. 저장소 Settings → Pages → Branch 선택, 폴더 `/docs` 로 켜면 링크가 생깁니다.
+
+브라우저 버전(`docs/index.html`)은 상세페이지 이미지(PNG, 가로 860px), 썸네일(PNG, 1000×1000), AI검색용 텍스트(.txt)도 저장할 수 있습니다. 이미지 변환에 `docs/html2canvas.min.js`(MIT)를 포함합니다.
