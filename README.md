@@ -147,3 +147,7 @@ static/style.css         # 디자인
 `docs/index.html` 한 파일로 동작하는 브라우저 전용 버전입니다. 저장소 Settings → Pages → Branch 선택, 폴더 `/docs` 로 켜면 링크가 생깁니다.
 
 브라우저 버전(`docs/index.html`)은 상품 설명 텍스트와 이미지를 넣으면 상품명·특징·가격·스펙을 자동 추출해, 썸네일(1000×1000)과 짧게 나눈 상세페이지 PNG 여러 장(가로 860px), AI검색용 텍스트(.txt)를 ZIP으로 저장합니다. `docs/html2canvas.min.js`, `docs/jszip.min.js`(둘 다 MIT)를 포함합니다.
+
+### AI 연동 (브라우저 버전)
+
+`docs/index.html`의 "AI로 정교하게 만들기"에 본인의 Anthropic API 키를 넣으면, 붙여넣은 글과 이미지(최대 8장)를 Claude가 읽고 상품명·특징·스펙 추출과 카피 작성을 합니다. 키는 브라우저에서 Anthropic으로 직접 전송되며(저장은 선택), 실패하면 규칙 기반 방식으로 자동 전환됩니다.

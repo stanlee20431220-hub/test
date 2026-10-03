@@ -41,7 +41,15 @@
       <label>말투<select name="tone"><option value="friendly">친근하게</option><option value="premium">고급스럽게</option><option value="trust">신뢰감 있게</option></select></label>
       <label>색상<select name="theme"><option value="mint">민트</option><option value="navy">네이비</option><option value="coral">코랄</option><option value="mono">모노</option></select></label>
     </details>
-    <button type="submit">자동으로 만들기</button>
+    <details id="aibox"><summary>🤖 AI로 정교하게 만들기 (선택)</summary>
+      <label style="font-weight:400"><input type="checkbox" name="useai" style="display:inline;width:auto;margin:0 6px 0 0">AI 사용 (글 정리 · 이미지 속 글자 읽기 · 문구 새로 쓰기)</label>
+      <label>Anthropic API 키<input type="password" name="apikey" autocomplete="off" placeholder="sk-ant-..."></label>
+      <label style="font-weight:400"><input type="checkbox" name="remember" style="display:inline;width:auto;margin:0 6px 0 0">이 브라우저에 키 저장 (공용 PC에서는 체크하지 마세요)</label>
+      <label>모델<select name="model"><option value="claude-sonnet-5-5">Sonnet 5.5 (권장)</option><option value="claude-haiku-4-5-20251001">Haiku 4.5 (저렴·빠름)</option></select></label>
+      <p class="hint">키는 이 브라우저에서 Anthropic 서버로만 전송되며 이 사이트 서버는 거치지 않습니다. 사용료는 본인 키로 청구되고, 이미지는 최대 8장까지 분석에 보냅니다.</p>
+    </details>
+    <button type="submit" id="gen">자동으로 만들기</button>
+    <p class="hint" id="aimsg" style="color:#2b4c8c"></p>
     <p class="hint" id="fmsg" style="color:#c92a2a;font-weight:600"></p>
     <div id="exports" style="display:none">
       <label style="margin-top:12px">이미지 한 장의 최대 높이
@@ -66,6 +74,7 @@
 <script src="jszip.min.js"></script>
 <script>
 const THEMES = { mint: ["#12b886", "#f1fbf7"], navy: ["#2b4c8c", "#f0f4fb"], coral: ["#f0614f", "#fff3f1"], mono: ["#222222", "#f4f4f4"] };
+const $ = id => document.getElementById(id);
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 const eunneun = w => { const c = (w.trim().slice(-1)).charCodeAt(0) - 0xAC00; return c >= 0 && c <= 11171 && c % 28 ? "은" : "는"; };
 const lines = t => (t || "").split("\n").map(s => s.replace(/^[\s\-•]+/, "").trim()).filter(Boolean);
@@ -98,11 +107,11 @@ function build(p, c, imgs) {
   const specs = lines(p.specs).map(l => l.split(/\s*[:：]\s*/)).filter(x => x.length >= 2);
   return `<div class="page">
 <section class="hero">${p.category ? `<div class="cat">${esc(p.category)}</div>` : ""}<h1>${esc(c.headline)}</h1><p>${esc(c.sub)}</p>${p.price ? `<div class="price">${esc(p.price)}</div>` : ""}${imgs[0] ? `<img src="${imgs[0]}" alt="${esc(p.name)}">` : ""}</section>
-<section class="pains"><h2>이런 고민, 있으셨죠?</h2><ul>${c.pains.map(t => `<li>${esc(t)}</li>`).join("")}</ul></section>
+${c.pains.length ? `<section class="pains"><h2>이런 고민, 있으셨죠?</h2><ul>${c.pains.map(t => `<li>${esc(t)}</li>`).join("")}</ul></section>` : ""}
 ${c.features.map((f, i) => `<section class="feature"><span class="no">POINT ${String(i + 1).padStart(2, "0")}</span><h2>${esc(f.t)}</h2><p>${esc(f.d)}</p>${imgs[i + 1] ? `<img src="${imgs[i + 1]}" alt="${esc(p.name + " - " + f.t)}">` : ""}</section>`).join("")}
 ${imgs.length > c.features.length + 1 ? `<section><h2>상세 컷</h2>${imgs.slice(c.features.length + 1).map(u => `<img src="${u}" alt="${esc(p.name)}">`).join("")}</section>` : ""}
 ${specs.length ? `<section><h2>상품 정보</h2><table>${specs.map(([k, ...v]) => `<tr><th>${esc(k)}</th><td>${esc(v.join(": "))}</td></tr>`).join("")}</table></section>` : ""}
-<section class="faq"><h2>자주 묻는 질문</h2>${c.faqs.map(([q, a]) => `<div class="q">${esc(q)}</div><p class="a">${esc(a)}</p>`).join("")}</section>
+${c.faqs.length ? `<section class="faq"><h2>자주 묻는 질문</h2>${c.faqs.map(([q, a]) => `<div class="q">${esc(q)}</div><p class="a">${esc(a)}</p>`).join("")}</section>` : ""}
 ${p.notice ? `<section class="notice">${esc(p.notice)}</section>` : ""}
 <section class="cta"><h2>${esc(c.cta)}</h2></section></div>`;
 }
@@ -148,25 +157,101 @@ function extract(text) {
   o.features = [...new Set(o.features)].slice(0, 8);
   return o;
 }
+
+// ---------- AI 연동 (사용자 본인 API 키, 브라우저 → Anthropic 직접 호출) ----------
+function shrink(dataUrl, max = 1024) {
+  return new Promise(res => { const im = new Image(); im.onload = () => {
+    const k = Math.min(1, max / Math.max(im.width, im.height)), c = document.createElement("canvas");
+    c.width = Math.round(im.width * k); c.height = Math.round(im.height * k); c.getContext("2d").drawImage(im, 0, 0, c.width, c.height);
+    res(c.toDataURL("image/jpeg", 0.8).split(",")[1]); }; im.onerror = () => res(null); im.src = dataUrl; });
+}
+async function callAI({ key, model, raw, fields, tone, imgs }) {
+  const blocks = [];
+  for (const u of imgs.slice(0, 8)) { const b = await shrink(u); if (b) blocks.push({ type: "image", source: { type: "base64", media_type: "image/jpeg", data: b } }); }
+  const toneTxt = { friendly: "친근하고 발랄한 말투", premium: "고급스럽고 절제된 말투", trust: "신뢰감 있고 정보 위주의 말투" }[tone];
+  const prompt = `당신은 한국 오픈마켓(스마트스토어/쿠팡) 상세페이지 카피라이터입니다. 아래 입력과 첨부 이미지(${blocks.length}장)를 바탕으로 상세페이지 구성 요소를 JSON으로 작성하세요. 말투: ${toneTxt}.
+
+[판매자가 붙여넣은 글]
+${raw || "(없음)"}
+
+[판매자가 이미 입력한 값 — 있으면 반드시 그대로 유지]
+${Object.entries(fields).filter(([, v]) => v).map(([k, v]) => `${k}: ${v}`).join("\n") || "(없음)"}
+
+규칙:
+- 입력 글과 이미지에서 확인되는 사실만 쓰세요. 수치·인증·소재·효능·수상·순위는 근거가 없으면 절대 만들지 말고, 부족한 정보는 "missing"에 적으세요.
+- 의학적 효능, "최고/1위/100%" 같은 입증 불가 표현, 타사 비방은 쓰지 마세요.
+- 이미지 속 글자(패키지, 스펙표 등)는 읽어서 사실 근거로 활용하세요.
+- features 는 3~6개, 각 desc 는 1~2문장. faqs 는 입력 정보로 답할 수 있는 질문만(0~4개). 배송·교환 정책은 판매자가 준 정보가 없으면 질문으로 만들지 마세요.
+- 아래 JSON 하나만 출력하세요(설명·코드블록 금지):
+{"name":"","category":"","price":"","target":"","specs":[{"k":"","v":""}],"notice":"",
+ "headline":"한 줄 핵심 카피","subheadline":"보조 문구","pains":["고객 고민 2~3개"],
+ "features":[{"title":"","desc":""}],"faqs":[{"q":"","a":""}],"cta":"구매 유도 문구",
+ "missing":["상세페이지를 더 잘 만들기 위해 판매자가 확인/추가하면 좋은 정보"]}`;
+  let r;
+  try {
+    r = await fetch("https://api.anthropic.com/v1/messages", { method: "POST",
+      headers: { "x-api-key": key, "anthropic-version": "2023-06-01", "content-type": "application/json", "anthropic-dangerous-direct-browser-access": "true" },
+      body: JSON.stringify({ model, max_tokens: 3500, messages: [{ role: "user", content: [...blocks, { type: "text", text: prompt }] }] }) });
+  } catch { throw new Error("네트워크 오류 (인터넷 연결 또는 차단 설정을 확인해주세요)"); }
+  if (!r.ok) {
+    const m = { 401: "API 키가 올바르지 않아요", 403: "이 키로는 사용 권한이 없어요", 429: "요청이 너무 많거나 사용 한도에 도달했어요", 400: "요청이 거절됐어요 (크레딧 부족 또는 이미지 문제일 수 있어요)" }[r.status];
+    throw new Error(m || `API 오류 (${r.status})`);
+  }
+  const j = await r.json(), txt = (j.content || []).map(c => c.text || "").join("");
+  const m = txt.match(/\{[\s\S]*\}/); if (!m) throw new Error("AI 응답을 해석하지 못했어요");
+  try { return JSON.parse(m[0]); } catch { throw new Error("AI 응답을 해석하지 못했어요"); }
+}
+const arr = x => Array.isArray(x) ? x : [];
+const str = x => (typeof x === "string" ? x : "").trim();
+function aiToExtract(a) {
+  return { name: str(a.name), category: str(a.category), price: str(a.price), target: str(a.target),
+    features: arr(a.features).map(f => str(f.title)).filter(Boolean).slice(0, 8),
+    specs: arr(a.specs).map(x => ({ k: str(x.k), v: str(x.v) })).filter(x => x.k && x.v),
+    notice: str(a.notice) ? [str(a.notice)] : [] };
+}
+function aiToCopy(a, base) {
+  const feats = arr(a.features).map(f => ({ t: str(f.title), d: str(f.desc) })).filter(f => f.t);
+  return { headline: str(a.headline) || base.headline, sub: str(a.subheadline) || base.sub,
+    pains: arr(a.pains).map(str).filter(Boolean).slice(0, 4),
+    features: feats.length ? feats : base.features,
+    faqs: arr(a.faqs).map(f => [str(f.q), str(f.a)]).filter(f => f[0] && f[1]).slice(0, 5),
+    cta: str(a.cta) || base.cta };
+}
+try { const k = localStorage.getItem("ant_key"); if (k) { $("f").apikey.value = k; $("f").remember.checked = true; } } catch {}
 const readFile = f => new Promise(r => { const fr = new FileReader(); fr.onload = () => r(fr.result); fr.readAsDataURL(f); });
 let built = null, title = "", accent = "", soft = "", thumbSrc = "", pName = "";
 
 document.getElementById("f").addEventListener("submit", async e => {
   e.preventDefault();
-  const fm = e.target, ex = extract(fm.raw.value); $("fmsg").textContent = "";
+  const fm = e.target; $("fmsg").textContent = ""; $("aimsg").textContent = "";
+  const files = [...fm.images.files].slice(0, 12);
+  const imgs = await Promise.all(files.map(readFile));
+  let ex = extract(fm.raw.value), ai = null;
+  const key = fm.apikey.value.trim();
+  try { if (fm.remember.checked && key) localStorage.setItem("ant_key", key); else localStorage.removeItem("ant_key"); } catch {}
+  if (fm.useai.checked) {
+    if (!key) { $("aibox").open = true; fm.apikey.focus(); return ($("fmsg").textContent = "AI를 쓰려면 API 키를 입력해주세요. (또는 'AI 사용' 체크를 해제하세요)"); }
+    const btn = $("gen"); btn.disabled = true; btn.textContent = "AI가 분석 중... (10~40초)";
+    try {
+      ai = await callAI({ key, model: fm.model.value, raw: fm.raw.value.trim(), tone: fm.tone.value, imgs,
+        fields: { 상품명: fm.name.value.trim(), 카테고리: fm.category.value.trim(), 가격: fm.price.value.trim(), 타깃: fm.target.value.trim(),
+          특징: lines(fm.features.value).join(" / "), 상품정보: fm.specs.value.trim(), 안내: fm.notice.value.trim() } });
+      ex = aiToExtract(ai);
+    } catch (err) { $("fmsg").textContent = `AI 사용 실패: ${err.message}. 기본 방식(규칙 기반)으로 만들었어요.`; ex = extract(fm.raw.value); ai = null; }
+    finally { btn.disabled = false; btn.textContent = "자동으로 만들기"; }
+  }
   const fill = (n, v) => { if (!fm[n].value.trim() && v) fm[n].value = v; };
   fill("name", ex.name); fill("features", ex.features.join("\n")); fill("category", ex.category); fill("price", ex.price);
   fill("target", ex.target); fill("specs", ex.specs.map(x => `${x.k}: ${x.v}`).join("\n")); fill("notice", ex.notice.join("\n"));
-  if (!fm.name.value.trim()) { fm.name.focus(); return ($("fmsg").textContent = "상품명을 찾지 못했어요. 상품명 칸에 입력하거나, 첫 줄에 상품명이 오도록(또는 '상품명: ○○' 형식으로) 붙여넣어 주세요."); }
+  if (!fm.name.value.trim()) { fm.name.focus(); ai = null; return ($("fmsg").textContent = "상품명을 찾지 못했어요. 상품명 칸에 입력하거나, 첫 줄에 상품명이 오도록(또는 '상품명: ○○' 형식으로) 붙여넣어 주세요."); }
   if (ex.specs.length || ex.notice.length || ex.category || ex.target) fm.querySelector("details").open = true;
   const d = new FormData(e.target);
   const p = { name: d.get("name").trim(), category: d.get("category").trim(), price: d.get("price").trim(), target: d.get("target").trim(),
     tone: d.get("tone"), features: lines(d.get("features")), specs: d.get("specs"), notice: d.get("notice").trim() };
-  const files = [...e.target.images.files].slice(0, 12);
-  const imgs = await Promise.all(files.map(readFile));
   [accent, soft] = THEMES[d.get("theme")]; title = p.name;
   const out = document.getElementById("out");
-  out.innerHTML = `<style>#out ${""}</style>` + `<div class="card" style="padding:0;overflow:hidden"><style>${scope(CSS(accent, soft), "#page-root")}</style><div id="page-root" contenteditable="true">${build(p, makeCopy(p), imgs)}</div></div>`;
+  out.innerHTML = `<style>#out ${""}</style>` + `<div class="card" style="padding:0;overflow:hidden"><style>${scope(CSS(accent, soft), "#page-root")}</style><div id="page-root" contenteditable="true">${build(p, ai ? aiToCopy(ai, makeCopy(p)) : makeCopy(p), imgs)}</div></div>`;
+  if (ai && arr(ai.missing).length) $("aimsg").textContent = "AI 확인 요청: " + arr(ai.missing).map(str).filter(Boolean).join(" / ");
   out.style.display = "block";
   document.getElementById("empty").style.display = "none";
   document.getElementById("exports").style.display = "block"; thumbSrc = imgs[0] || ""; pName = p.name;
@@ -174,7 +259,6 @@ document.getElementById("f").addEventListener("submit", async e => {
   out.scrollIntoView({ behavior: "smooth" });
 });
 
-const $ = id => document.getElementById(id);
 const say = t => { $("msg").textContent = t; };
 const save = (blob, name) => { const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = name; a.click(); };
 
